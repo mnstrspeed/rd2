@@ -24,10 +24,6 @@ public class Program
 		}
 	}
 	
-	//private static final DistanceMeasure<String> distanceMeasure = (String s1, String s2) -> {
-	//	return Math.abs(s2.length() - s1.length());
-	//};
-	
 	private static final DistanceMeasure<Vector2D> distanceMeasure = (Vector2D a, Vector2D b) -> {
 		float dx = a.x - b.x;
 		float dy = a.y - b.y;
