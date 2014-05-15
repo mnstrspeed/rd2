@@ -2,7 +2,9 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 
 /**
@@ -77,7 +79,7 @@ public class KNearestNeighborClassifier<D, C> extends Classifier<D, C>
 					if (iterator.next().getValue() < distance)
 					{
 						iterator.previous();
-						iterator.add(new SimpleEntry<C, Double>(c.getClassLabel(), distance))
+						iterator.add(new SimpleEntry<C, Double>(c.getClassLabel(), distance));
 					}
 				}
 				// Trim off the first element (max) if our shortlist is too big now
