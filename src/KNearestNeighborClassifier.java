@@ -5,6 +5,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * A K-Nearest-Neighbor implementation
+ */
 public class KNearestNeighborClassifier<D, C> extends Classifier<D, C>
 {
 	private final int k;
@@ -32,26 +35,64 @@ public class KNearestNeighborClassifier<D, C> extends Classifier<D, C>
 			throw new NullPointerException("Classifier not trained yet");
 		}
 		
-		List<Map.Entry<C, Double>> top = this.getClosestNeighbors(dataPoint);
+		List<Map.Entry<C, Double>> closestNeighbors = this.getClosestNeighbors(dataPoint);
 		
-		// count classes for first K points in training set
-		HashMap<C, Integer> counts = new HashMap<C, Integer>(k);
-		for (Map.Entry<C, Double> entry : top)
+		// Determine the majority class of the k closest neighbors
+		C majority = null;
+		int majorityCount = 0;
+		for (Map.Entry<C, Double> entry : closestNeighbors)
 		{
-			C c = entry.getKey();
-			counts.put(c, counts.containsKey(c) ? counts.get(c) + 1 : 1);
+			C label = entry.getKey();
+			if (majorityCount == 0)
+			{
+				majority = label;
+				majorityCount = 1;
+			}
+			else if (majority.equals(label))
+				majorityCount++;
+			else
+				majorityCount--;
 		}
-		
-		// select majority class
-		Map.Entry<C, Integer> majorityClass = null;
-		for (Map.Entry<C, Integer> entry : counts.entrySet())
-		{
-			if (majorityClass == null || entry.getValue() > majorityClass.getValue())
-				majorityClass = entry;
-		}
-		return majorityClass.getKey();
+
+		return majority;
 	}
 
+	/**
+	 * Finds the closest neighbors of #dataPoint in the training set.
+	 */
+	private List<Map.Entry<C, Double>> _getClosestNeighbors(D dataPoint)
+	{
+		LinkedList<Map.Entry<C, Double>> closest = new LinkedList<Map.Entry<C, Double>>(); // ordered max -> min, max k elements
+		for (Classification<D, C> c : this.trainingSet)
+		{
+			// Compute distance between this data point and the training instance
+			double distance = distanceMeasure.compare(c.getDataPoint(), dataPoint);
+
+			if (closest.size() < this.k || closest.get(0).getValue() > distance)
+			{
+				// Insert into the sorted list using insertion sort
+				ListIterator<Map.Entry<C, Double>> iterator = closest.listIterator();
+				while (iterator.hasNext())
+				{
+					if (iterator.next().getValue() < distance)
+					{
+						iterator.previous();
+						iterator.add(new SimpleEntry<C, Double>(c.getClassLabel(), distance))
+					}
+				}
+				// Trim off the first element (max) if our shortlist is too big now
+				if (closest.size() > this.k)
+				{
+					closest.removeFirst();
+				}
+			}
+		}
+		return closest;
+	}
+
+	/**
+	 * Finds the closest neighbors of #dataPoint in the training set.
+	 */
 	private List<Map.Entry<C, Double>> getClosestNeighbors(D dataPoint)
 	{
 		// modified max heap to find k closest data points in O(n log k)

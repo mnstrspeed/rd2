@@ -32,39 +32,52 @@ public class Program
 	
 	public static void main(String[] args)
 	{
-		String trainSetPath = args[0];
-		String testDataPath = args[1];
-		String testLabelPath = args[2];
-		
+		List<Classification<Vector2D, Integer>> trainingSet;
+		List<Vector2D> testSet;
+
+		// Load
 		try
 		{
-			// Load
-			List<Classification<Vector2D, Integer>> trainingSet = read(trainSetPath, scanner -> 
-				new Classification<Vector2D, Integer>(new Vector2D(scanner.nextFloat(), scanner.nextFloat()), scanner.nextInt()));
-			List<Vector2D> testSet = read(testDataPath, scanner -> new Vector2D(scanner.nextFloat(), scanner.nextFloat()));
-			
-			// Classify
-			Classifier<Vector2D, Integer> classifier = 
-					new KNearestNeighborClassifier<Vector2D, Integer>(3, distanceMeasure);
-			classifier.train(trainingSet);
-			List<Classification<Vector2D, Integer>> predicted = classifier.classify(testSet);
-			
-			// Compare to test label data
-			List<Integer> actual = read(testLabelPath, scanner -> scanner.nextInt());
-			float classificationAccuracy = calculateAccuracy(predicted, actual);
-			System.out.println(classificationAccuracy * 100.0 + "%");
+			String trainSetPath = args[0];
+			String testDataPath = args[1];
+
+			trainingSet = read(trainSetPath, scanner -> 
+				new Classification<Vector2D, Integer>(
+					new Vector2D(
+						scanner.nextFloat(), 
+						scanner.nextFloat()), 
+					scanner.nextInt()));
+			testSet = read(testDataPath, scanner -> 
+				new Vector2D(
+					scanner.nextFloat(), 
+					scanner.nextFloat()));
 		}
 		catch (IOException ex)
 		{
-			throw new RuntimeException("Fail :(", ex);
+			throw new RuntimeException("SYSTEM FAILURE SYSTEM FAILURE SYSTEM FAILURE", ex);
+		}
+		
+		// Classify
+		Classifier<Vector2D, Integer> classifier = 
+			new KNearestNeighborClassifier<Vector2D, Integer>(3, distanceMeasure);
+		classifier.train(trainingSet);
+		List<Classification<Vector2D, Integer>> predicted = classifier.classify(testSet);
+		
+		// Print result
+		for (Classification<Vector2D, Integer> classification : predicted)
+		{
+			System.out.println(classification.getClassLabel());
 		}
 	}
 
+	/**
+	 * Compare predicted classifications with actual classifications and return
+	 * the accuracy
+	 */
 	private static <D, C> float calculateAccuracy(List<Classification<D, C>> predicted, List<C> actual)
 	{
 		Iterator<Classification<D, C>> predictedIt = predicted.iterator();
 		Iterator<C> actualIt = actual.iterator();
-		
 		
 		int correct = 0;
 		int incorrect = 0;
@@ -79,6 +92,10 @@ public class Program
 		return classificationAccuracy;
 	}
 	
+	/**
+	 * Read a number of T instances from a file using a Function<Scanner, T> to
+	 * read individual instances
+	 */
 	private static <T> List<T> read(String filePath, Function<Scanner, T> reader) throws FileNotFoundException
 	{
 		List<T> set = new ArrayList<T>();
