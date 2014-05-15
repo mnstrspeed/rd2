@@ -12,10 +12,10 @@ import java.util.Map;
  */
 public class KNearestNeighborClassifier<D, C> extends Classifier<D, C>
 {
-	private final int k;
-	private final DistanceMeasure<D> distanceMeasure;
+	protected final int k;
+	protected final DistanceMeasure<D> distanceMeasure;
 	
-	private List<Classification<D, C>> trainingSet;
+	protected List<Classification<D, C>> prototypes;
 	
 	public KNearestNeighborClassifier(final int k, final DistanceMeasure<D> distanceMeasure)
 	{
@@ -26,13 +26,13 @@ public class KNearestNeighborClassifier<D, C> extends Classifier<D, C>
 	@Override
 	public void train(List<Classification<D, C>> trainingSet)
 	{
-		this.trainingSet = trainingSet;
+		this.prototypes = trainingSet;
 	}
 
 	@Override
 	public C classify(D dataPoint)
 	{
-		if (this.trainingSet == null)
+		if (this.prototypes == null)
 		{
 			throw new NullPointerException("Classifier not trained yet");
 		}
@@ -65,7 +65,7 @@ public class KNearestNeighborClassifier<D, C> extends Classifier<D, C>
 	private List<Map.Entry<C, Double>> _getClosestNeighbors(D dataPoint)
 	{
 		LinkedList<Map.Entry<C, Double>> closest = new LinkedList<Map.Entry<C, Double>>(); // ordered max -> min, max k elements
-		for (Classification<D, C> c : this.trainingSet)
+		for (Classification<D, C> c : this.prototypes)
 		{
 			// Compute distance between this data point and the training instance
 			double distance = distanceMeasure.compare(c.getDataPoint(), dataPoint);
@@ -100,7 +100,7 @@ public class KNearestNeighborClassifier<D, C> extends Classifier<D, C>
 		// modified max heap to find k closest data points in O(n log k)
 		ArrayList<Map.Entry<C, Double>> heap = new ArrayList<Map.Entry<C, Double>>(this.k);
 	
-		for (Classification<D, C> c : this.trainingSet)
+		for (Classification<D, C> c : this.prototypes)
 		{
 			double distance = distanceMeasure.compare(c.getDataPoint(), dataPoint);
 			if (heap.size() < this.k)
@@ -143,4 +143,11 @@ public class KNearestNeighborClassifier<D, C> extends Classifier<D, C>
 		return heap;
 	}
 
+	/**
+	 * Gets the prototypes resulting from training the classifier
+	 */
+	public List<Classification<D, C>> getPrototypes()
+	{
+		return this.prototypes;
+	}
 }

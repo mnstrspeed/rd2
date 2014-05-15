@@ -1,6 +1,8 @@
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -29,42 +31,58 @@ public class Program
 	
 	public static void main(String[] args)
 	{
+		long time = System.currentTimeMillis();
+		
 		List<Classification<Vector2D, Integer>> trainingSet;
 		List<Vector2D> testSet;
 
+		String basePath = "/home/tsanders/Dropbox/RD2/datasets/xor/";
+		String trainSetPath = basePath + "train.txt"; //args[0];
+		String testDataPath = basePath + "test.txt"; //args[1];
+		
 		// Load
 		try
 		{
-			String trainSetPath = args[0];
-			String testDataPath = args[1];
-
 			trainingSet = read(trainSetPath, scanner -> 
 				new Classification<Vector2D, Integer>(
 					new Vector2D(
 						scanner.nextFloat(), 
 						scanner.nextFloat()), 
 					scanner.nextInt()));
+			System.out.println("Loaded " + trainSetPath);
+			
 			testSet = read(testDataPath, scanner -> 
 				new Vector2D(
 					scanner.nextFloat(), 
 					scanner.nextFloat()));
+			System.out.println("Loaded " + testDataPath);
 		}
 		catch (IOException ex)
 		{
 			throw new RuntimeException("SYSTEM FAILURE SYSTEM FAILURE SYSTEM FAILURE", ex);
 		}
 		
-		// Classify
-		Classifier<Vector2D, Integer> classifier = 
-			new KNearestNeighborClassifier<Vector2D, Integer>(3, distanceMeasure);
+		// Prepare classifier using training set
+		R2D2Classifier<Vector2D, Integer> classifier = 
+			new R2D2Classifier<Vector2D, Integer>(3, distanceMeasure);
 		classifier.train(trainingSet);
+
+		// Classify test set
 		List<Classification<Vector2D, Integer>> predicted = classifier.classify(testSet);
 		
-		// Print result
-		for (Classification<Vector2D, Integer> classification : predicted)
+		// Save prototypes and class labels for upload
+		try
 		{
-			System.out.println(classification.getClassLabel());
+			write(basePath + "prototypes_" + time + ".txt", classifier.getPrototypes(), c ->
+					c.getDataPoint().x + " " + c.getDataPoint().y + " " + c.getClassLabel());
+			write(basePath + "labels_" + time + ".txt", predicted, c -> c.getClassLabel().toString());
 		}
+		catch (IOException ex)
+		{
+			throw new RuntimeException(ex);
+		}
+		
+		System.out.println("Execution finished in " + (System.currentTimeMillis() - time) + " ms");
 	}
 
 	/**
@@ -104,5 +122,16 @@ public class Program
 		}
 		scanner.close();
 		return set;
+	}
+	
+	private static <T> void write(String filePath, List<T> elements, Function<T, String> writer) throws IOException
+	{
+		try (PrintWriter output = new PrintWriter(new FileWriter(filePath)))
+		{
+			for (T element : elements)
+			{
+				output.println(writer.apply(element));
+			}
+		}
 	}
 }
