@@ -83,12 +83,14 @@ public class Program
 		// Save prototypes and class labels for upload
 		try
 		{
-			String time = new SimpleDateFormat("MMMdd_HH:mm:ss").format(Calendar.getInstance().getTime());
-			String prototypePath = "prototypes_" + time;
-			String labelPath = "labels_" + time;
+			String time = new SimpleDateFormat("MMMdd_HH.mm.ss").format(Calendar.getInstance().getTime());
+			String prototypePath = "prototypes_" + time + ".txt";
+			String labelPath = "labels_" + time + ".txt";
 			
 			write(prototypePath, classifier.getPrototypes(), c -> c.getDataPoint() + " " + c.getClassLabel());
+			System.out.println("Saved prototypes as " + prototypePath);
 			write(labelPath, result, c -> c.getClassLabel().toString());
+			System.out.println("Saved labels as " + labelPath);
 		}
 		catch (IOException ex)
 		{
