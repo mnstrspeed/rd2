@@ -4,7 +4,9 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Scanner;
 import java.util.function.Function;
@@ -39,21 +41,27 @@ public class Program
 	 * @param testPath
 	 */
 	public static void classify(String trainPath, String testPath)
-	{
+	{	
 		List<Classification<AttributeVector, Integer>> trainingSet;
 		List<AttributeVector> testSet;
 		
 		// Read train and test set
 		try
 		{
+			System.out.print("Loading " + trainPath + "...");
 			trainingSet  = read(trainPath, scanner -> new Classification<AttributeVector, Integer>(
 							AttributeVector.fromScanner(scanner, 8), scanner.nextInt()));
+			System.out.println(" done");
+			System.out.print("Loading " + testPath + "...");
 			testSet = read(testPath, scanner -> AttributeVector.fromScanner(scanner, 8));
+			System.out.println(" done");
 		}
 		catch (FileNotFoundException ex)
 		{
 			throw new RuntimeException("File not found", ex);
 		}
+		
+		long startTime = System.currentTimeMillis();
 		
 		DistanceMeasure<AttributeVector> noiseDistanceMeasure = new EuclideanDistance(); // distance measure for ENN
 		DistanceMeasure<AttributeVector> classDistanceMeasure = new WeightedEuclideanDistance(new double[] { // distance measure for classification
@@ -62,16 +70,20 @@ public class Program
 		});
 		
 		// Run classifier
+		System.out.print("Training classifier...");
 		R2D2Classifier<AttributeVector, Integer> classifier = new R2D2Classifier<AttributeVector, Integer>(11, 
 				classDistanceMeasure, noiseDistanceMeasure);
 		classifier.train(trainingSet);
+		System.out.println(" done");
 
+		System.out.print("Classifying test set...");
 		List<Classification<AttributeVector, Integer>> result = classifier.classify(testSet);
+		System.out.println(" done");
 		
 		// Save prototypes and class labels for upload
 		try
 		{
-			long time = System.currentTimeMillis();
+			String time = new SimpleDateFormat("MMMdd_HH:mm:ss").format(Calendar.getInstance().getTime());
 			String prototypePath = "prototypes_" + time;
 			String labelPath = "labels_" + time;
 			
@@ -82,6 +94,8 @@ public class Program
 		{
 			throw new RuntimeException(ex);
 		}
+		
+		System.out.println("\nExecution took " + (System.currentTimeMillis() - startTime) + " ms");
 	}
 	
 	/**
