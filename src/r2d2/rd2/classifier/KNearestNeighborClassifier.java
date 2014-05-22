@@ -1,3 +1,4 @@
+package r2d2.rd2.classifier;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -6,6 +7,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+
+import r2d2.rd2.distances.DistanceMeasure;
 
 /**
  * A K-Nearest-Neighbor implementation

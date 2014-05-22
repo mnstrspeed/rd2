@@ -1,3 +1,4 @@
+package r2d2.rd2.classifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;

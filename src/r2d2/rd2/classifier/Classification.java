@@ -1,3 +1,4 @@
+package r2d2.rd2.classifier;
 
 public class Classification<D, C>
 {

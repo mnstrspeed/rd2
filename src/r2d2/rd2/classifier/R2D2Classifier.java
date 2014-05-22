@@ -1,5 +1,8 @@
+package r2d2.rd2.classifier;
 import java.util.ArrayList;
 import java.util.List;
+
+import r2d2.rd2.distances.DistanceMeasure;
 
 
 public class R2D2Classifier<D, C> extends KNearestNeighborClassifier<D, C>

@@ -1,3 +1,4 @@
+package r2d2.rd2.distances;
 
 /**
  * Defines a distance measure between two instances of type T
