@@ -64,7 +64,8 @@ public class KNearestNeighborClassifier<D, C> extends Classifier<D, C>
 	/**
 	 * Finds the closest neighbors of #dataPoint in the training set.
 	 */
-	private List<Map.Entry<C, Double>> _getClosestNeighbors(D dataPoint)
+	@SuppressWarnings("unused")
+	private List<Map.Entry<C, Double>> getClosestNeighbors_INSERTION_SORT(D dataPoint)
 	{
 		LinkedList<Map.Entry<C, Double>> closest = new LinkedList<Map.Entry<C, Double>>(); // ordered max -> min, max k elements
 		for (Classification<D, C> c : this.prototypes)

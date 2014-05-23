@@ -7,11 +7,13 @@ import r2d2.rd2.distances.DistanceMeasure;
 
 public class R2D2Classifier<D, C> extends KNearestNeighborClassifier<D, C>
 {
+	private int ennK;
 	private DistanceMeasure<D> ennDistanceMeasure;
 	
-	public R2D2Classifier(int k, DistanceMeasure<D> distanceMeasure, DistanceMeasure<D> ennDistanceMeasure)
+	public R2D2Classifier(int k, int ennK, DistanceMeasure<D> distanceMeasure, DistanceMeasure<D> ennDistanceMeasure)
 	{
 		super(k, distanceMeasure);
+		this.ennK = ennK;
 		this.ennDistanceMeasure = ennDistanceMeasure;
 		//System.out.println("Initializing classifier with K=" + this.k);
 	}
@@ -26,7 +28,7 @@ public class R2D2Classifier<D, C> extends KNearestNeighborClassifier<D, C>
 		
 		// Prepare KNN classifier for ENN
 		KNearestNeighborClassifier<D, C> classifier = 
-				new KNearestNeighborClassifier<D, C>(this.k + 1, this.ennDistanceMeasure);
+				new KNearestNeighborClassifier<D, C>(this.ennK, this.ennDistanceMeasure);
 		classifier.train(trainingSet);
 		
 		for (Classification<D, C> c : trainingSet)

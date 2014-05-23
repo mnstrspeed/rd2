@@ -1,8 +1,11 @@
 package r2d2.rd2;
+
+import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -100,24 +103,28 @@ public class Program
 	 * @param testPath
 	 */
 	public static void classify(String trainPath, String testPath)
-	{	
-		final int NUM_ATTRIBUTES = 8;
-		
+	{
 		List<Classification<AttributeVector, Integer>> trainingSet;
 		List<AttributeVector> testSet;
 		
 		// Read train and test set
 		try
 		{
+			// Determine number of attributes
+			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(trainPath)));
+			final int NUM_ATTRIBUTES = reader.readLine().split(" ").length - 1;
+			System.out.println("Detected " + NUM_ATTRIBUTES + " attributes");
+			reader.close();
+			
 			System.out.print("Loading " + trainPath + "...");
 			trainingSet  = read(trainPath, scanner -> new Classification<AttributeVector, Integer>(
-							AttributeVector.fromScanner(scanner, 8), scanner.nextInt()));
+							AttributeVector.fromScanner(scanner, NUM_ATTRIBUTES), scanner.nextInt()));
 			System.out.println(" done");
 			System.out.print("Loading " + testPath + "...");
 			testSet = read(testPath, scanner -> AttributeVector.fromScanner(scanner, NUM_ATTRIBUTES));
 			System.out.println(" done");
 		}
-		catch (FileNotFoundException ex)
+		catch (IOException ex)
 		{
 			throw new RuntimeException("File not found", ex);
 		}
@@ -125,17 +132,17 @@ public class Program
 		long startTime = System.currentTimeMillis();
 		
 		DistanceMeasure<AttributeVector> noiseDistanceMeasure = new EuclideanDistance(); // distance measure for ENN
-		DistanceMeasure<AttributeVector> classDistanceMeasure = new WeightedEuclideanDistance(new double[] { // distance measure for classification
-				0, 1, 0, 1,
-				0, 1, 1, 1 // weights to use
-		});
+		DistanceMeasure<AttributeVector> classDistanceMeasure = new EuclideanDistance(); // TODO: WeightedEuclidean with trained weights
 		
 		// Run classifier
 		System.out.print("Training classifier...");
-		R2D2Classifier<AttributeVector, Integer> classifier = new R2D2Classifier<AttributeVector, Integer>(11, 
+		R2D2Classifier<AttributeVector, Integer> classifier = new R2D2Classifier<AttributeVector, Integer>(11, 51,
 				classDistanceMeasure, noiseDistanceMeasure);
 		classifier.train(trainingSet);
 		System.out.println(" done");
+		
+		System.out.println("Discarded " + ((trainingSet.size() - classifier.getPrototypes().size()) / 
+				(float)trainingSet.size() * 100) + "% as noise");
 
 		System.out.print("Classifying test set...");
 		List<Classification<AttributeVector, Integer>> result = classifier.classify(testSet);

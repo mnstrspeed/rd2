@@ -131,7 +131,7 @@ public class ExtremeGym implements Gym<AttributeVector, Integer>
 		}
 		
 		// Train plain KNN classifier on trainingSet using weights
-		R2D2Classifier<AttributeVector, Integer> classifier = new R2D2Classifier<AttributeVector, Integer>(11, 
+		R2D2Classifier<AttributeVector, Integer> classifier = new R2D2Classifier<AttributeVector, Integer>(11, 51,
 				new WeightedEuclideanDistance(weights), 
 				new EuclideanDistance());
 		classifier.train(trainingSet);
