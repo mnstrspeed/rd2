@@ -10,6 +10,7 @@ import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
 import java.util.function.Function;
@@ -120,6 +121,15 @@ public class Program
 			trainingSet  = read(trainPath, scanner -> new Classification<AttributeVector, Integer>(
 							AttributeVector.fromScanner(scanner, NUM_ATTRIBUTES), scanner.nextInt()));
 			System.out.println(" done");
+			
+			if (trainingSet.size() > 7500)
+			{
+				System.out.print("Detected >7500 instances; taking random sample...");
+				Collections.shuffle(trainingSet);
+				trainingSet = trainingSet.subList(0, 75000);
+				System.out.println(" done");
+			}
+			
 			System.out.print("Loading " + testPath + "...");
 			testSet = read(testPath, scanner -> AttributeVector.fromScanner(scanner, NUM_ATTRIBUTES));
 			System.out.println(" done");
