@@ -12,9 +12,9 @@ import r2d2.rd2.distances.EuclideanDistance;
 import r2d2.rd2.distances.WeightedEuclideanDistance;
 import r2d2.rd2.util.StringHelper;
 
-public class Gym
+public class MutantGym implements Gym<AttributeVector, Integer>
 {
-	public static void train(List<Classification<AttributeVector, Integer>> set)
+	public void train(List<Classification<AttributeVector, Integer>> set)
 	{
 		List<Classification<AttributeVector, Integer>> prototypes = 
 				new ArrayList<Classification<AttributeVector, Integer>>();
@@ -56,45 +56,8 @@ public class Gym
 	        // Keep mutations if they improved the fitness
 	        if (mutatedFitness > fitness)
 	        {
-	        	double[] ancestor = chromosomes;
-	        	
 	        	chromosomes = mutated;
 	        	fitness = mutatedFitness;
-	        	
-	        	double[] difference = new double[8];
-	        	for (int i = 0; i < difference.length; i++)
-	        	{
-	        		difference[i] = chromosomes[i] - ancestor[i];
-	        	}
-	        	
-	    		for(int i = 0; i <= 4095; i++)
-	    		{
-	    			double factor = Math.cos(i * Math.PI) * 1 / Math.pow(2, i/2);
-	    			
-	    			for (int j = 0; j < difference.length; j++)
-	    			{
-		    			mutated[j] = chromosomes[j] + difference[j] * factor;
-	    			}
-	    			
-	    			
-	    	        mutatedFitness = determineFitness(mutated, set, random);
-	    	        if (mutatedFitness > fitness)
-	    	        {
-	    	        	System.out.println("Bingo! " + i);
-	    	        	ancestor = chromosomes;    	        	
-	    	        	chromosomes = mutated;
-	    	        	fitness = mutatedFitness;
-	    	        	
-	    	        	for (int j = 0; j < difference.length; j++)
-	    	        	{
-	    	        		difference[j] = chromosomes[j] - ancestor[j];
-	    	        	}
-	    	        	
-	    	        	i = 0;
-	    	        }
-
-	    		}		
-	        	
 	        	
 	        	System.out.println("better: " + StringHelper.join(chromosomes) + " (" + fitness + ")");
 	        }

@@ -106,7 +106,22 @@ public class Program
 	 */
 	public static void gym(String trainPath)
 	{
-		// TODO
+		try
+		{
+			// Load training set
+			System.out.print("Loading " + trainPath + "...");
+			List<Classification<AttributeVector, Integer>> set  = read(trainPath, 
+					scanner -> new Classification<AttributeVector, Integer>(
+							AttributeVector.fromScanner(scanner, 8), scanner.nextInt()));
+			System.out.println(" done");
+			
+			// PUMP IT
+			new ExtremeGym().train(set);
+		}
+		catch (FileNotFoundException ex)
+		{
+			throw new RuntimeException("File not found: " + trainPath, ex);
+		}
 	}
 	
 	private static <T> List<T> read(String filePath, Function<Scanner, T> reader) throws FileNotFoundException
