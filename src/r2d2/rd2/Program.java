@@ -13,6 +13,7 @@ import java.util.function.Function;
 
 import r2d2.rd2.classifier.AttributeVector;
 import r2d2.rd2.classifier.Classification;
+import r2d2.rd2.classifier.KNearestNeighborClassifier;
 import r2d2.rd2.classifier.R2D2Classifier;
 import r2d2.rd2.distances.DistanceMeasure;
 import r2d2.rd2.distances.EuclideanDistance;
@@ -33,6 +34,64 @@ public class Program
 			// gym <train set path>
 			gym(args[1]);
 		}
+		else if (action.equals("noise"))
+		{
+			noise(args[1], Integer.parseInt(args[2]));
+		}
+	}
+	
+	public static void noise(String trainPath, int k)
+	{
+		List<Classification<AttributeVector, Integer>> trainingSet;
+		// Load training set
+		try
+		{
+			System.out.print("Loading " + trainPath + "...");
+			trainingSet  = read(trainPath, 
+					scanner -> new Classification<AttributeVector, Integer>(
+							AttributeVector.fromScanner(scanner, 2), scanner.nextInt()));
+			System.out.println(" done");
+		}
+		catch (FileNotFoundException ex)
+		{
+			throw new RuntimeException("File not found: " + trainPath, ex);
+		}
+		
+		List<Classification<AttributeVector, Integer>> prototypes = 
+				new ArrayList<Classification<AttributeVector, Integer>>();
+		List<Classification<AttributeVector, Integer>> noise = 
+				new ArrayList<Classification<AttributeVector, Integer>>();
+		
+		// Prepare KNN classifier for ENN
+		KNearestNeighborClassifier<AttributeVector, Integer> classifier = 
+				new KNearestNeighborClassifier<AttributeVector, Integer>(k + 1, new EuclideanDistance());
+		classifier.train(trainingSet);
+		
+		for (Classification<AttributeVector, Integer> c : trainingSet)
+		{
+			if (classifier.classify(c.getDataPoint()).equals(c.getClassLabel()))
+			{
+				prototypes.add(c);
+			}
+			else
+			{
+				noise.add(c);
+			}
+		}
+		
+		System.out.println("Discarded " + ((trainingSet.size() - prototypes.size()) / 
+				(float)trainingSet.size() * 100) + "% as noise");
+		
+		// Write prototypes and noise
+		try
+		{
+			write("prototypes", prototypes, c -> c.getDataPoint() + " " + c.getClassLabel());
+			write("noise", noise, c -> c.getDataPoint() + " " + c.getClassLabel());
+		}
+		catch (IOException ex)
+		{
+			throw new RuntimeException(ex);
+		}
 	}
 	
 	/**
@@ -42,6 +101,8 @@ public class Program
 	 */
 	public static void classify(String trainPath, String testPath)
 	{	
+		final int NUM_ATTRIBUTES = 8;
+		
 		List<Classification<AttributeVector, Integer>> trainingSet;
 		List<AttributeVector> testSet;
 		
@@ -53,7 +114,7 @@ public class Program
 							AttributeVector.fromScanner(scanner, 8), scanner.nextInt()));
 			System.out.println(" done");
 			System.out.print("Loading " + testPath + "...");
-			testSet = read(testPath, scanner -> AttributeVector.fromScanner(scanner, 8));
+			testSet = read(testPath, scanner -> AttributeVector.fromScanner(scanner, NUM_ATTRIBUTES));
 			System.out.println(" done");
 		}
 		catch (FileNotFoundException ex)
