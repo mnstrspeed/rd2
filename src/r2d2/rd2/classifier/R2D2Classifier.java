@@ -15,14 +15,11 @@ public class R2D2Classifier<D, C> extends KNearestNeighborClassifier<D, C>
 		super(k, distanceMeasure);
 		this.ennK = ennK;
 		this.ennDistanceMeasure = ennDistanceMeasure;
-		//System.out.println("Initializing classifier with K=" + this.k);
 	}
 
 	@Override
 	public void train(List<Classification<D, C>> trainingSet)
 	{
-		//System.out.println("Filtering noise with ENN, K=" + this.k);
-		
 		List<Classification<D, C>> prototypes = 
 				new ArrayList<Classification<D, C>>();
 		
@@ -38,8 +35,6 @@ public class R2D2Classifier<D, C> extends KNearestNeighborClassifier<D, C>
 				prototypes.add(c);
 			}
 		}
-		//System.out.println("Discarded " + ((trainingSet.size() - prototypes.size()) / 
-		//		(float)trainingSet.size() * 100) + "% as noise");
 		
 		super.train(prototypes);
 	}
