@@ -9,8 +9,10 @@ import java.util.PriorityQueue;
 import r2d2.rd2.classifier.AttributeVector;
 import r2d2.rd2.classifier.Classification;
 import r2d2.rd2.classifier.Classifier;
+import r2d2.rd2.classifier.KNearestNeighborClassifier;
 import r2d2.rd2.classifier.R2D2Classifier;
 import r2d2.rd2.distances.DistanceMeasure;
+import r2d2.rd2.distances.EuclideanDistance;
 import r2d2.rd2.distances.WeightedEuclideanDistance;
 import r2d2.rd2.util.CrossValidation;
 import r2d2.rd2.util.StringHelper;
@@ -79,16 +81,23 @@ public class PlantsVsWeightsGym implements Gym<AttributeVector, Integer>
 		double explored = 0;
 		double nr = Math.pow((double)dimensions, 10.0);
 		
+		String previousLine = "";
 		WeightVector best = start;
 		while (!frontier.isEmpty())
 		{
 			WeightVector current = frontier.poll();
-			//System.out.println("(" + (explored / nr) + ") " + current);
+			
+			System.out.print("\r");
+			for (int i = 0; i < previousLine.length(); i++)
+				System.out.print(" ");
+			previousLine = Double.toString(explored / nr);
+			System.out.print("\r" + previousLine);
 			
 			if (current.fitness > best.fitness)
 			{
 				best = current;
-				System.out.println("(" + (explored / nr) + ") " + best);
+				System.out.println(" " + best);
+				previousLine = "";
 			}
 			
 			explored += dimensions;
@@ -115,8 +124,9 @@ public class PlantsVsWeightsGym implements Gym<AttributeVector, Integer>
 	private double determineFitness(double[] child)
 	{
 		DistanceMeasure<AttributeVector> dist = new WeightedEuclideanDistance(child);
-		R2D2Classifier<AttributeVector, Integer> classifier = 
-				new R2D2Classifier<AttributeVector, Integer>(classifierK, noiseK, dist, dist);
+		Classifier<AttributeVector, Integer> classifier = new KNearestNeighborClassifier<AttributeVector, Integer>(classifierK, dist);
+		//R2D2Classifier<AttributeVector, Integer> classifier = 
+		//		new R2D2Classifier<AttributeVector, Integer>(classifierK, noiseK, dist, dist);
 		
 		int correct = 0, total = 0;
 		for (CrossValidation.Set<Classification<AttributeVector, Integer>> crossValidationSet : 

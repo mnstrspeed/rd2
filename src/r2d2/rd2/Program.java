@@ -227,8 +227,13 @@ public class Program
 							AttributeVector.fromScanner(scanner, dimensions), scanner.nextInt()));
 			System.out.println(" done");
 			
+			// train R2D2 for ENN
+			R2D2Classifier<AttributeVector, Integer> c = new R2D2Classifier<AttributeVector, Integer>(11, 51, 
+					new EuclideanDistance(), new EuclideanDistance());
+			c.train(set);
+
 			// PUMP IT
-			new PlantsVsWeightsGym(11, 51).train(set);
+			new PlantsVsWeightsGym(11, 51).train(c.getPrototypes());
 		}
 		catch (IOException ex)
 		{
