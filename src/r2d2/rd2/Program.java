@@ -10,7 +10,9 @@ import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Scanner;
 import java.util.function.Function;
 
@@ -20,7 +22,6 @@ import r2d2.rd2.classifier.KNearestNeighborClassifier;
 import r2d2.rd2.classifier.R2D2Classifier;
 import r2d2.rd2.distances.DistanceMeasure;
 import r2d2.rd2.distances.EuclideanDistance;
-import r2d2.rd2.distances.WeightedEuclideanDistance;
 
 public class Program
 {	
@@ -41,8 +42,35 @@ public class Program
 		{
 			noise(args[1], Integer.parseInt(args[2]));
 		}
+		else if (action.equals("overfit"))
+		{
+			overfit(args[1], args[2], args[3]);
+		}
 	}
 	
+	public static void overfit(String trainPath, String testPath, String testLabelPath)
+	{
+		List<Classification<AttributeVector, Integer>> trainingSet;
+		List<AttributeVector> testSet;
+		List<Integer> testLabelSet;
+		
+		// Read train and test set
+		try
+		{
+			final int NUM_ATTRIBUTES = detectAttributeCount(trainPath);
+			trainingSet  = read(trainPath, scanner -> new Classification<AttributeVector, Integer>(
+							AttributeVector.fromScanner(scanner, NUM_ATTRIBUTES), scanner.nextInt()));
+			testSet = read(testPath, scanner -> AttributeVector.fromScanner(scanner, NUM_ATTRIBUTES));
+			testLabelSet = read(testLabelPath, scanner -> scanner.nextInt());
+		}
+		catch (IOException ex)
+		{
+			throw new RuntimeException("File not found", ex);
+		}
+		
+		//new PlantsVsWeightsGym(11, 51).train(trainingSet, testSet, testLabelSet);
+	}
+
 	public static void noise(String trainPath, int k)
 	{
 		List<Classification<AttributeVector, Integer>> trainingSet;
@@ -111,15 +139,22 @@ public class Program
 		try
 		{
 			// Determine number of attributes
-			BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(trainPath)));
-			final int NUM_ATTRIBUTES = reader.readLine().split(" ").length - 1;
+			final int NUM_ATTRIBUTES = detectAttributeCount(trainPath);
 			System.out.println("Detected " + NUM_ATTRIBUTES + " attributes");
-			reader.close();
 			
 			System.out.print("Loading " + trainPath + "...");
 			trainingSet  = read(trainPath, scanner -> new Classification<AttributeVector, Integer>(
 							AttributeVector.fromScanner(scanner, NUM_ATTRIBUTES), scanner.nextInt()));
 			System.out.println(" done");
+			
+			if (trainingSet.size() > 7500)
+			{
+				System.out.print("Detected >7500 instances; taking random sample...");
+				Collections.shuffle(trainingSet);
+				trainingSet = trainingSet.subList(0, 100);
+				System.out.println(" done");
+			}
+			
 			System.out.print("Loading " + testPath + "...");
 			testSet = read(testPath, scanner -> AttributeVector.fromScanner(scanner, NUM_ATTRIBUTES));
 			System.out.println(" done");
@@ -131,13 +166,12 @@ public class Program
 		
 		long startTime = System.currentTimeMillis();
 		
-		DistanceMeasure<AttributeVector> noiseDistanceMeasure = new EuclideanDistance(); // distance measure for ENN
-		DistanceMeasure<AttributeVector> classDistanceMeasure = new EuclideanDistance(); // TODO: WeightedEuclidean with trained weights
+		DistanceMeasure<AttributeVector> distanceMeasure = new EuclideanDistance();
 		
 		// Run classifier
 		System.out.print("Training classifier...");
-		R2D2Classifier<AttributeVector, Integer> classifier = new R2D2Classifier<AttributeVector, Integer>(11, 51,
-				classDistanceMeasure, noiseDistanceMeasure);
+		R2D2Classifier<AttributeVector, Integer> classifier = new R2D2Classifier<AttributeVector, Integer>(1, 1,
+				distanceMeasure, distanceMeasure);
 		classifier.train(trainingSet);
 		System.out.println(" done");
 		
@@ -167,6 +201,15 @@ public class Program
 		
 		System.out.println("\nExecution took " + (System.currentTimeMillis() - startTime) + " ms");
 	}
+
+	private static int detectAttributeCount(String trainPath) throws FileNotFoundException, IOException
+	{
+		BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(trainPath)));
+		final int NUM_ATTRIBUTES = reader.readLine().split(" ").length - 1;
+		reader.close();
+		
+		return NUM_ATTRIBUTES;
+	}
 	
 	/**
 	 * Where we train weights, duh
@@ -178,15 +221,16 @@ public class Program
 		{
 			// Load training set
 			System.out.print("Loading " + trainPath + "...");
+			final int dimensions = detectAttributeCount(trainPath);
 			List<Classification<AttributeVector, Integer>> set  = read(trainPath, 
 					scanner -> new Classification<AttributeVector, Integer>(
-							AttributeVector.fromScanner(scanner, 8), scanner.nextInt()));
+							AttributeVector.fromScanner(scanner, dimensions), scanner.nextInt()));
 			System.out.println(" done");
 			
 			// PUMP IT
-			new ExtremeGym().train(set);
+			new PlantsVsWeightsGym(11, 51).train(set);
 		}
-		catch (FileNotFoundException ex)
+		catch (IOException ex)
 		{
 			throw new RuntimeException("File not found: " + trainPath, ex);
 		}
@@ -197,6 +241,7 @@ public class Program
 		List<T> set = new ArrayList<T>();
 		
 		Scanner scanner = new Scanner(new FileInputStream(filePath));
+		scanner.useLocale(Locale.US);
 		while (scanner.hasNext())
 		{
 			set.add(reader.apply(scanner));
