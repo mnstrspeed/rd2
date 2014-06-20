@@ -56,50 +56,52 @@ public class R2D2Classifier<D, C> extends KNearestNeighborClassifier<D, C>
 		List<Classification<D, C>> prototypes = new ArrayList<Classification<D, C>>(set);
 		// DROP-3
 		
-		// associate of P: have P as a nearest neighbor
 		HashMap<Classification<D, C>, List<Classification<D, C>>> associates = 
 				new HashMap<Classification<D, C>, List<Classification<D, C>>>(prototypes.size());
 		HashMap<Classification<D, C>, List<Map.Entry<Classification<D, C>, Double>>> neighbors = 
 				new HashMap<Classification<D, C>, List<Map.Entry<Classification<D, C>, Double>>>(prototypes.size());
 		for (Classification<D, C> p : prototypes)
-		{
 			associates.put(p, new LinkedList<Classification<D, C>>());
-		}
+		
 		// Add p to each of its neighbors' lists of associates
 		for (Classification<D, C> p : prototypes)
 		{
 			List<Map.Entry<Classification<D, C>, Double>> pClosestNeighbors = 
-					this.getClosestNeighbors(p.getDataPoint(), this.k + 1);
+					getClosestNeighbors(prototypes, this.distanceMeasure, p.getDataPoint(), this.k + 1);
 			neighbors.put(p, pClosestNeighbors);
 			for (Map.Entry<Classification<D, C>, Double> a : pClosestNeighbors)
 			{
-				associates.get(a).add(p);
+				associates.get(a.getKey()).add(p);
 			}
 		}
 		
 		// TODO: sort by distance to nearest enemy (descending)
 		
-		for (Classification<D, C> p : prototypes)
+		Iterator<Classification<D, C>> iterator = prototypes.iterator();
+		while (iterator.hasNext())
 		{
+			Classification<D, C> p = iterator.next();
+			
 			// associates of p classified correctly with P as a neighbor
-			double with = 0;
+			int with = 0;
 			for (Classification<D, C> a : associates.get(p))
 				if (a.getClassLabel() == this.getMajority(neighbors.get(a)))
 					with++;
 			// associates of p classified correctly without P as a neighbor
-			double without = 0;			
+			int without = 0;			
 			for (Classification<D, C> a : associates.get(p))
 				if (a.getClassLabel() == this.getMajority(withoutNeighbor(neighbors.get(a), p)))
 					without++;
 			
 			if (without >= with)
 			{
-				this.prototypes.remove(p); // remove p from s
+				//System.out.println("with: " + with + ", without: " + without + " (" + neighbors.get(p).size() + " associates)");
+				iterator.remove(); // remove p from s
 				
 				for (Classification<D, C> a : associates.get(p))
 				{
 					// remove p from a's list of nearest neighbors & find a new nearest neighbor for a
-					neighbors.put(a, getClosestNeighbors(this.prototypes, this.distanceMeasure, a.getDataPoint(), this.k + 1));
+					neighbors.put(a, getClosestNeighbors(prototypes, this.distanceMeasure, a.getDataPoint(), this.k + 1));
 					// add a to its new neighbor's list of associates
 					for (Map.Entry<Classification<D, C>, Double> n : neighbors.get(a))
 					{
@@ -109,7 +111,7 @@ public class R2D2Classifier<D, C> extends KNearestNeighborClassifier<D, C>
 				}
 				for (Map.Entry<Classification<D, C>, Double> n : neighbors.get(p))
 				{
-					associates.get(n).remove(p); // remove p from n's list of associates
+					associates.get(n.getKey()).remove(p); // remove p from n's list of associates
 				}
 			}
 		}

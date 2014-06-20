@@ -46,6 +46,36 @@ public class Program
 		{
 			overfit(args[1], args[2], args[3]);
 		}
+		else if (action.equals("verify"))
+		{
+			verify(args[1], args[2]);
+		}
+	}
+	
+	public static void verify(String predictedLabelPath, String actualLabelPath)
+	{
+		try (BufferedReader predictedReader = new BufferedReader(new InputStreamReader(new FileInputStream(predictedLabelPath)));
+				BufferedReader actualReader = new BufferedReader(new InputStreamReader(new FileInputStream(actualLabelPath))))
+		{
+			int correct = 0, total = 0;
+			for (String predicted = predictedReader.readLine(), actual = actualReader.readLine(); 
+					predicted != null && actual != null; predicted = predictedReader.readLine(), actual = actualReader.readLine())
+			{
+				if (predicted.equals(actual))
+					correct++;
+				total++;
+			}
+			
+			if (predictedReader.readLine() != null || actualReader.readLine() != null)
+				throw new RuntimeException("File are of a different length!");
+			
+			double accuracy = (double)correct / (double)total;
+			System.out.println("Accuracy: " + (accuracy * 100.0) + " %");
+		} 
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
 	}
 	
 	public static void overfit(String trainPath, String testPath, String testLabelPath)
@@ -170,7 +200,7 @@ public class Program
 		
 		// Run classifier
 		System.out.print("Training classifier...");
-		R2D2Classifier<AttributeVector, Integer> classifier = new R2D2Classifier<AttributeVector, Integer>(1, 1,
+		R2D2Classifier<AttributeVector, Integer> classifier = new R2D2Classifier<AttributeVector, Integer>(11, 51,
 				distanceMeasure, distanceMeasure);
 		classifier.train(trainingSet);
 		System.out.println(" done");
