@@ -6,9 +6,13 @@ import java.util.Random;
 
 import r2d2.rd2.classifier.AttributeVector;
 import r2d2.rd2.classifier.Classification;
+import r2d2.rd2.classifier.Classifier;
+import r2d2.rd2.classifier.KNearestNeighborClassifier;
 import r2d2.rd2.classifier.R2D2Classifier;
+import r2d2.rd2.distances.DistanceMeasure;
 import r2d2.rd2.distances.EuclideanDistance;
 import r2d2.rd2.distances.WeightedEuclideanDistance;
+import r2d2.rd2.util.CrossValidation;
 
 public class TestSubject {
 	private double[] chromosomes;
@@ -24,6 +28,38 @@ public class TestSubject {
 		diversity = 0;
 		ditness = fitness + diversity;
 		destiny = fate;
+	}
+	
+	public void normalizeChromosomes()
+	{
+		double prefactor = 0;
+		double refactor = 0;
+		
+		for (int i = 0; i < chromosomes.length; i++)
+		{
+			if (chromosomes[i] > prefactor)
+			{
+				prefactor = chromosomes[i];
+			}
+		}
+		
+		for (int i = 0; i < chromosomes.length; i++)
+		{
+			chromosomes[i] = chromosomes[i] / prefactor;
+		}
+	}
+	
+	public void showChromosomes()
+	{
+		System.out.print("{");
+		
+		double total = 0;
+		
+		for (int i = 0; i < chromosomes.length - 1; i++)
+		{
+			System.out.print(chromosomes[i] + ", ");
+		}
+		System.out.print(chromosomes[chromosomes.length -1] + "} ");
 	}
 	
 	public void setDiversity(double[] dna)
@@ -46,6 +82,7 @@ public class TestSubject {
 	public void updateDitness()
 	{
 		ditness = fitness + diversity;
+		//ditness = fitness + diversity;
 	}
 	
 	public double getFitness()
@@ -80,42 +117,31 @@ public class TestSubject {
 	
 	public void setFitness(List<Classification<AttributeVector, Integer>> set)
 	{
-		fitness = determineFitness(chromosomes, set, destiny);
+		normalizeChromosomes();
+		fitness = determineFitness(chromosomes, set);
 	}
 	
-	private static double determineFitness(double[] weights, List<Classification<AttributeVector, Integer>> set, Random random)
+	private double determineFitness(double[] child, List<Classification<AttributeVector, Integer>> set)
 	{
-		// Split set into train and test
-		List<Classification<AttributeVector, Integer>> trainingSet = new ArrayList<Classification<AttributeVector, Integer>>();
-		List<Classification<AttributeVector, Integer>> testSet = new ArrayList<Classification<AttributeVector, Integer>>();
-		for (Classification<AttributeVector, Integer> c : set)
+		normalizeChromosomes();
+		
+		DistanceMeasure<AttributeVector> dist = new WeightedEuclideanDistance(child);
+		Classifier<AttributeVector, Integer> classifier = 
+				new KNearestNeighborClassifier<AttributeVector, Integer>(11, dist);
+		
+		int correct = 0, total = 0;
+		for (CrossValidation.Set<Classification<AttributeVector, Integer>> crossValidationSet : 
+			CrossValidation.KFold(set, 5))
 		{
-			if (random.nextBoolean())
-				trainingSet.add(c);
-			else
-				testSet.add(c);
+			classifier.train(crossValidationSet.getTrainingSet());
+			
+			for (Classification<AttributeVector, Integer> testEntry : crossValidationSet.getTestSet())
+			{
+				if (classifier.classify(testEntry.getDataPoint()) == testEntry.getClassLabel())
+					correct++;
+				total++;
+			}
 		}
-		
-		// Train plain KNN classifier on trainingSet using weights
-		R2D2Classifier<AttributeVector, Integer> classifier = new R2D2Classifier<AttributeVector, Integer>(11, 11,
-				new WeightedEuclideanDistance(weights), 
-				new EuclideanDistance());
-		classifier.train(trainingSet);
-		
-		// Test performance on testSet
-		int correct = 0;
-		int total = 0;
-		for (int i = 0; i < testSet.size(); i++)
-		{
-			Integer result = classifier.classify(testSet.get(i).getDataPoint());
-			if (result == testSet.get(i).getClassLabel())
-				correct++;
-			total++;
-		}
-		
-		// Return accuracy in %
-		//System.out.println ((correct / (double)total) * 100.0);
 		return (correct / (double)total) * 100.0;
 	}
-	
 }

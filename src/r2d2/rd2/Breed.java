@@ -6,10 +6,13 @@ import java.util.Random;
 
 import r2d2.rd2.classifier.AttributeVector;
 import r2d2.rd2.classifier.Classification;
+import r2d2.rd2.classifier.Classifier;
 import r2d2.rd2.classifier.KNearestNeighborClassifier;
 import r2d2.rd2.classifier.R2D2Classifier;
+import r2d2.rd2.distances.DistanceMeasure;
 import r2d2.rd2.distances.EuclideanDistance;
 import r2d2.rd2.distances.WeightedEuclideanDistance;
+import r2d2.rd2.util.CrossValidation;
 import r2d2.rd2.util.StringHelper;
 
 public class Breed implements Gym<AttributeVector, Integer>
@@ -33,7 +36,26 @@ public class Breed implements Gym<AttributeVector, Integer>
 			select(set);
 			
 			parents[0].setFitness(set);
+			parents[0].showChromosomes();
 			System.out.println(parents[0].getFitness());
+			/*
+			parents[1].setFitness(set);
+			System.out.println(parents[1].getFitness());
+			parents[2].setFitness(set);
+			System.out.println(parents[2].getFitness());
+			parents[3].setFitness(set);
+			System.out.println(parents[3].getFitness());
+			parents[4].setFitness(set);
+			System.out.println(parents[4].getFitness());
+			parents[5].setFitness(set);
+			System.out.println(parents[5].getFitness());
+			parents[6].setFitness(set);
+			System.out.println(parents[6].getFitness());
+			parents[7].setFitness(set);
+			System.out.println(parents[7].getFitness());
+			parents[8].setFitness(set);
+			System.out.println(parents[8].getFitness());
+			*/
 		}
 	}
 	
@@ -69,11 +91,13 @@ public class Breed implements Gym<AttributeVector, Integer>
 			parents[i].setChromosome(i, 1);
 		}
 		
+		
 		for (int i = 8; i < 16; i++)
 		{	
 			parents[i] = new TestSubject(baseY, random);
-			parents[i].setChromosome(i - 8, 1);
+			parents[i].setChromosome(i - 8, 0);
 		}
+		
 		
 		parents[16] = new TestSubject(baseX, random);
 		parents[17] = new TestSubject(baseY, random );
@@ -115,14 +139,15 @@ public class Breed implements Gym<AttributeVector, Integer>
 				index++;
 			}
 		}
+		
 	}
 	
 	public void select(List<Classification<AttributeVector, Integer>> set)
 	{
 		double maxFitness = 0;
-		int fittestSubject = 400;
+		int fittestSubject = 100;
 		double maxDiversity = 0;
-		int mostDivergent = 400;
+		int mostDivergent = 0;
 		
 		for (int i = 0; i < children.length; i++)
 		{
@@ -154,6 +179,7 @@ public class Breed implements Gym<AttributeVector, Integer>
 			children[i].setDiversity(fittestdna);
 		}
 		
+		/*
 		for (int i = 0; i < children.length; i++)
 		{
 			if (children[i].getDiversity() > maxDiversity)
@@ -170,6 +196,7 @@ public class Breed implements Gym<AttributeVector, Integer>
 		}
 		
 		parents[1] = new TestSubject(mostdivergentdna, random);
+		*/
 		
 		for (int i = 0; i < children.length; i++)
 		{
@@ -179,7 +206,7 @@ public class Breed implements Gym<AttributeVector, Integer>
 		children[fittestSubject].zeroDitness();
 		children[mostDivergent].zeroDitness();
 
-		for (int i = 2; i < 16; i++)
+		for (int i = 1; i < 10; i++)
 		{
 			double maxDitness = 0;
 			int mostDitnesst = 400;
@@ -194,6 +221,7 @@ public class Breed implements Gym<AttributeVector, Integer>
 			}
 			
 			parents[i] = new TestSubject(children[mostDitnesst].getdna(), random);
+			children[mostDitnesst].zeroDitness();
 			
 		}
 		
@@ -262,12 +290,14 @@ public class Breed implements Gym<AttributeVector, Integer>
 		{
 			// Mutate a random weight with +/- 0.10
 			int pointMutation = random.nextInt(mutated.length);
-			mutated[pointMutation] = mutated[pointMutation] + (random.nextDouble() * 0.20 - 0.10);
+			mutated[pointMutation] = Math.abs(mutated[pointMutation] + (random.nextDouble() * 0.20 - 0.10));
 		}
 		
         return mutated;
 	}
 	
+
+	/*
 	private static double determineFitness(double[] weights, List<Classification<AttributeVector, Integer>> set, Random random)
 	{
 		// Split set into train and test
@@ -301,4 +331,5 @@ public class Breed implements Gym<AttributeVector, Integer>
 		// Return accuracy in %
 		return (correct / (double)total) * 100.0;
 	}
+	*/
 }
