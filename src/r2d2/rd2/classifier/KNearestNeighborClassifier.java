@@ -39,14 +39,17 @@ public class KNearestNeighborClassifier<D, C> extends Classifier<D, C>
 			throw new NullPointerException("Classifier not trained yet");
 		}
 		
-		List<Map.Entry<C, Double>> closestNeighbors = this.getClosestNeighbors(dataPoint);
-		
+		return getMajority(this.getClosestNeighbors(dataPoint));
+	}
+
+	protected C getMajority(List<Map.Entry<Classification<D, C>, Double>> closestNeighbors)
+	{
 		// Determine the majority class of the k closest neighbors
 		C majority = null;
 		int majorityCount = 0;
-		for (Map.Entry<C, Double> entry : closestNeighbors)
+		for (Map.Entry<Classification<D, C>, Double> entry : closestNeighbors)
 		{
-			C label = entry.getKey();
+			C label = entry.getKey().getClassLabel();
 			if (majorityCount == 0)
 			{
 				majority = label;
@@ -94,21 +97,34 @@ public class KNearestNeighborClassifier<D, C> extends Classifier<D, C>
 		}
 		return closest;
 	}
+	
+	/**
+	 * Finds the k closest neighbors of #dataPoint in the training set.
+	 */
+	protected List<Map.Entry<Classification<D, C>, Double>> getClosestNeighbors(D dataPoint)
+	{
+		return this.getClosestNeighbors(dataPoint, this.k);
+	}
 
 	/**
-	 * Finds the closest neighbors of #dataPoint in the training set.
+	 * Finds the n closest neighbors of #dataPoint in the training set.
 	 */
-	private List<Map.Entry<C, Double>> getClosestNeighbors(D dataPoint)
+	protected List<Map.Entry<Classification<D, C>, Double>> getClosestNeighbors(D dataPoint, int n)
+	{
+		return getClosestNeighbors(this.prototypes, this.distanceMeasure, dataPoint, n);
+	}
+	
+	protected static <D, C> List<Map.Entry<Classification<D, C>, Double>> getClosestNeighbors(List<Classification<D, C>> set, DistanceMeasure<D> distanceMeasure, D dataPoint, int n)
 	{
 		// modified max heap to find k closest data points in O(n log k)
-		ArrayList<Map.Entry<C, Double>> heap = new ArrayList<Map.Entry<C, Double>>(this.k);
-	
-		for (Classification<D, C> c : this.prototypes)
+		ArrayList<Map.Entry<Classification<D, C>, Double>> heap = new ArrayList<Map.Entry<Classification<D, C>, Double>>(n);
+			
+		for (Classification<D, C> c : set)
 		{
 			double distance = distanceMeasure.compare(c.getDataPoint(), dataPoint);
-			if (heap.size() < this.k)
+			if (heap.size() < n)
 			{
-				heap.add(new SimpleEntry<C, Double>(c.getClassLabel(), distance));
+				heap.add(new SimpleEntry<Classification<D, C>, Double>(c, distance));
 				
 				// swap up until heap property is satisfied again
 				int pos = heap.size() - 1;
@@ -120,14 +136,14 @@ public class KNearestNeighborClassifier<D, C> extends Classifier<D, C>
 			}
 			else if (heap.get(0).getValue() > distance)
 			{
-				heap.set(0, new SimpleEntry<C, Double>(c.getClassLabel(), distance));
+				heap.set(0, new SimpleEntry<Classification<D, C>, Double>(c, distance));
 				
 				// swap down until heap property is satisfied again
 				int pos = 0;
-				while (pos * 2 + 1 < this.k)
+				while (pos * 2 + 1 < n)
 				{
 					int largest = pos * 2 + 1;
-					if (pos * 2 + 2 < this.k && heap.get(largest).getValue() < heap.get(pos * 2 + 2).getValue())
+					if (pos * 2 + 2 < n && heap.get(largest).getValue() < heap.get(pos * 2 + 2).getValue())
 						largest = pos * 2 + 2;
 						
 					if (heap.get(pos).getValue() < heap.get(largest).getValue())
@@ -142,7 +158,6 @@ public class KNearestNeighborClassifier<D, C> extends Classifier<D, C>
 				}
 			}
 		}
-		// TODO: return List<C> without distances
 		return heap;
 	}
 
