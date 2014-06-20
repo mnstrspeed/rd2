@@ -55,21 +55,18 @@ public class PlantsVsWeightsGym implements Gym<AttributeVector, Integer>
 	
 	private PriorityQueue<WeightVector> frontier;
 	
-	private List<Classification<AttributeVector, Integer>> set;
+	private List<CrossValidation.Set<Classification<AttributeVector, Integer>>> validationSets;
+	private int k;
 	
-	private int classifierK;
-	private int noiseK;
-	
-	public PlantsVsWeightsGym(int classifierK, int noiseK)
+	public PlantsVsWeightsGym(int k)
 	{
-		this.classifierK = classifierK;
-		this.noiseK = noiseK;
+		this.k = k;
 	}
 	
 	@Override
 	public void train(List<Classification<AttributeVector, Integer>> set)
 	{
-		this.set = set;
+		this.validationSets = CrossValidation.KFold(set, 5);
 		
 		int dimensions = set.get(0).getDataPoint().getDimension();
 		WeightVector start = new WeightVector(
@@ -113,7 +110,7 @@ public class PlantsVsWeightsGym implements Gym<AttributeVector, Integer>
 			double[] child = Arrays.copyOf(parent.weights, parent.weights.length);
 			child[i] += 0.1;
 			
-			// cap at 1.0
+			// keep weights between 0.0 and 1.0
 			if (child[i] <= 1.0)
 				children.add(new WeightVector(child, determineFitness(child)));
 		}
@@ -124,13 +121,10 @@ public class PlantsVsWeightsGym implements Gym<AttributeVector, Integer>
 	private double determineFitness(double[] child)
 	{
 		DistanceMeasure<AttributeVector> dist = new WeightedEuclideanDistance(child);
-		Classifier<AttributeVector, Integer> classifier = new KNearestNeighborClassifier<AttributeVector, Integer>(classifierK, dist);
-		//R2D2Classifier<AttributeVector, Integer> classifier = 
-		//		new R2D2Classifier<AttributeVector, Integer>(classifierK, noiseK, dist, dist);
-		
+		Classifier<AttributeVector, Integer> classifier = new KNearestNeighborClassifier<AttributeVector, Integer>(this.k, dist);
+
 		int correct = 0, total = 0;
-		for (CrossValidation.Set<Classification<AttributeVector, Integer>> crossValidationSet : 
-			CrossValidation.KFold(this.set, 5))
+		for (CrossValidation.Set<Classification<AttributeVector, Integer>> crossValidationSet : this.validationSets)
 		{
 			classifier.train(crossValidationSet.getTrainingSet());
 			
@@ -145,53 +139,4 @@ public class PlantsVsWeightsGym implements Gym<AttributeVector, Integer>
 		return (correct / (double)total) * 100.0;
 	}
 
-	/*
-	public void trainWithStats(List<Classification<AttributeVector, Integer>> trainingSet,
-			List<AttributeVector> testSet, List<Integer> testLabelSet)
-	{
-		this.train = trainingSet.subList(0, trainingSet.size() / 2);
-		this.test = trainingSet.subList(trainingSet.size() / 2, trainingSet.size());
-		
-		int dimensions = train.get(0).getDataPoint().getDimension();
-		WeightVector start = new WeightVector(
-				new double[dimensions], 0); // initial weights (0, 0, ..., 0)
-		
-		this.frontier = new PriorityQueue<WeightVector>(1 << 16); // capacity of 2^16 
-		frontier.add(start);
-		
-		int j = 0;
-		
-		WeightVector best = start;
-		while (!frontier.isEmpty())
-		{
-			WeightVector current = frontier.poll();
-			
-			if (current.fitness >= best.fitness)
-			{
-				best = current;
-				//System.out.println(best);
-				
-				DistanceMeasure<AttributeVector> dist = new WeightedEuclideanDistance(best.weights);
-				R2D2Classifier<AttributeVector, Integer> classifier = 
-						new R2D2Classifier<AttributeVector, Integer>(classifierK, noiseK, dist, dist);
-				classifier.train(this.train);
-				
-				int correct = 0;
-				int total = 0;
-				for (int i = 0; i < testSet.size(); i++)
-				{
-					Integer result = classifier.classify(testSet.get(i));
-					if (result == testLabelSet.get(i))
-						correct++;
-					total++;
-				}
-				
-				double accuracy = (correct / (double)total) * 100.0;
-				System.out.println(j + " " + best.fitness + " " + accuracy);
-			}
-			
-			frontier.addAll(getChildren(current));
-			j++;
-		}
-	}*/
 }
