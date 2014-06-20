@@ -1,5 +1,6 @@
 package r2d2.rd2.classifier;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -75,7 +76,16 @@ public class R2D2Classifier<D, C> extends KNearestNeighborClassifier<D, C>
 			}
 		}
 		
-		// TODO: sort by distance to nearest enemy (descending)
+		// Sort by nearest enemy (descending)
+		Collections.sort(prototypes, (a, b) ->
+		{
+			double d = getClosestEnemyDistance(prototypes, distanceMeasure, b) - getClosestEnemyDistance(prototypes, distanceMeasure, a);
+			if (d < 0)
+				return -1;
+			if (d > 0)
+				return 1;
+			return 0;
+		});
 		
 		Iterator<Classification<D, C>> iterator = prototypes.iterator();
 		while (iterator.hasNext())
@@ -95,7 +105,6 @@ public class R2D2Classifier<D, C> extends KNearestNeighborClassifier<D, C>
 			
 			if (without >= with)
 			{
-				//System.out.println("with: " + with + ", without: " + without + " (" + neighbors.get(p).size() + " associates)");
 				iterator.remove(); // remove p from s
 				
 				for (Classification<D, C> a : associates.get(p))
@@ -132,5 +141,24 @@ public class R2D2Classifier<D, C> extends KNearestNeighborClassifier<D, C>
 			}
 		}
 		return result;
+	}
+	
+	private static <D, C> double getClosestEnemyDistance(List<Classification<D, C>> set, 
+			DistanceMeasure<D> distanceMeasure, Classification<D, C> self)
+	{
+		Classification<D, C> closestEnemy = null;
+		double closestEnemyDistance = 0;
+		
+		for (Classification<D, C> classification : set)
+		{
+			double distance = distanceMeasure.compare(self.getDataPoint(), classification.getDataPoint());
+			if ((closestEnemy == null || distance < closestEnemyDistance) && 
+					classification.getClassLabel() != self.getClassLabel())
+			{
+				closestEnemy = classification;
+				closestEnemyDistance = distance;
+			}
+		}
+		return closestEnemyDistance;
 	}
 }
