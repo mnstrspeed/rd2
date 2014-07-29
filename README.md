@@ -4,4 +4,4 @@ Project for Research &amp; Development 2 (2014) at Radboud University Nijmegen b
 
 Assignment
 ----------
-improve upon the classical k-nearest neighbor classifier algorithm.
+Improve upon the classical k-nearest neighbor classifier algorithm.
